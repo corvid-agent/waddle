@@ -1,0 +1,145 @@
+// Waddle approval program — an Arcron-hook-shaped Algorand TestNet
+// experiment, hand-written as a TEAL template and rendered by Go
+// (contract/contract.go). Edit the template or the Go constants, never
+// the rendered output.
+//
+// Traps this program is built to avoid (same family as corvid-agent/plod):
+//   1. The keeper is authorized by its APPLICATION ADDRESS
+//      (app_params_get AppAddress of the configured keeper app id),
+//      never by itob(keeper_id).
+//   2. create takes ZERO app args, so no uint64 create arg can ever be
+//      mis-mapped to the keeper app id (the ~68-year-cadence freeze).
+//   3. The weekly cadence is an Arcron register-time field. No interval
+//      is compiled into this program.
+#pragma version {{.TealVersion}}
+
+// ---------------------------------------------------------------------------
+// Dispatch. Create is a zero-arg NoOp (ApplicationID == 0). Every later call
+// must be a NoOp whose first app arg is an ARC-4 method selector; the
+// selector is the ONLY argument tick() accepts. Everything else errs.
+// ---------------------------------------------------------------------------
+txn ApplicationID
+int 0
+==
+bnz create
+
+txn OnCompletion
+int NoOp
+==
+assert
+
+txna ApplicationArgs 0
+byte 0x{{.TickSelectorHex}} // {{.TickSignature}}
+==
+bnz tick
+
+txna ApplicationArgs 0
+byte 0x{{.SetKeeperSelectorHex}} // {{.SetKeeperSignature}}
+==
+bnz set_keeper
+
+err
+
+// ---------------------------------------------------------------------------
+// create: zero app args, always. Nothing is configured at create time; the
+// creator sets the keeper once, afterwards, via set_keeper(uint64).
+// ---------------------------------------------------------------------------
+create:
+txn NumAppArgs
+int 0
+==
+assert
+int 1
+return
+
+// ---------------------------------------------------------------------------
+// tick()uint64 — the Arcron keeper hook.
+//   * keeper_id must be configured (set_keeper ran exactly once)
+//   * txn Sender — from this app's view, the inner-txn sender of the keeper
+//     call — must equal app_params_get AppAddress of keeper_id, i.e. the
+//     keeper APPLICATION address, never itob(keeper_id)
+//   * increments global "calls", records Global.round and the caller
+//   * ABI-returns the new counter value
+// ---------------------------------------------------------------------------
+tick:
+byte "{{.KeyKeeperID}}"
+app_global_get
+int 0
+>
+assert // keeper configured
+
+byte "{{.KeyKeeperID}}"
+app_global_get
+app_params_get AppAddress
+assert // keeper app exists; stack now holds its application address
+txn Sender
+==
+assert // caller IS the keeper application address
+
+byte "{{.KeyCalls}}"
+byte "{{.KeyCalls}}"
+app_global_get
+int 1
++
+app_global_put // calls += 1
+
+byte "{{.KeyLastRound}}"
+global Round
+app_global_put // last_round = Global.round
+
+byte "{{.KeyLastCaller}}"
+txn Sender
+app_global_put // last_caller = caller (keeper application address)
+
+byte "{{.KeyCalls}}"
+app_global_get
+store 0
+byte 0x151f7c75 // ARC-4 ABI return prefix
+load 0
+itob
+concat
+log // return uint64 counter
+int 1
+return
+
+// ---------------------------------------------------------------------------
+// set_keeper(uint64)void — creator-only, one-time. Stores the keeper app id
+// in global state. The cadence interval is NOT here: it is chosen at Arcron
+// register time and never compiled in.
+// ---------------------------------------------------------------------------
+set_keeper:
+txn NumAppArgs
+int 2
+==
+assert // selector + exactly one uint64
+
+txn Sender
+global CreatorAddress
+==
+assert // creator only
+
+byte "{{.KeyKeeperID}}"
+app_global_get
+!
+assert // one-time: keeper_id still unset
+
+byte "{{.KeyKeeperID}}"
+txna ApplicationArgs 1
+btoi
+app_global_put
+
+byte "{{.KeyKeeperID}}"
+app_global_get
+int 0
+>
+assert // keeper id can never be zero
+
+byte "{{.KeyKeeperID}}"
+app_global_get
+app_params_get AppCreator
+assert // the keeper app must already exist on-chain
+
+byte 0x151f7c75 // ARC-4 ABI return prefix, void return value
+log
+int 1
+return
