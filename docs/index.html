@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WADDLE — tick board</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="crt" id="crt">
+    <header>
+      <h1>Waddle</h1>
+      <div class="meta" id="keeper-meta">TestNet · Arcron keeper</div>
+    </header>
+
+    <section class="status-row">
+      <div class="label">Status</div>
+      <div class="flaps big" id="status" aria-label="board status"></div>
+      <div class="meta" id="subhead">seeking</div>
+    </section>
+
+    <section class="board" id="board">
+      <div class="cell">
+        <div class="label">Next exec round</div>
+        <div class="flaps" id="stat-next" aria-label="next execution round"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Interval</div>
+        <div class="flaps" id="stat-interval" aria-label="upkeep interval"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Times executed</div>
+        <div class="flaps" id="stat-exec" aria-label="times executed"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Escrow</div>
+        <div class="flaps" id="stat-escrow" aria-label="upkeep escrow balance"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Chain round</div>
+        <div class="flaps" id="stat-round" aria-label="chain last round"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Ticks so far</div>
+        <div class="flaps" id="stat-ticks" aria-label="contract tick counter"></div>
+      </div>
+    </section>
+
+    <p class="notes" id="notes">
+      One upkeep, one <code>tick()</code>. Status is read from the Arcron
+      keeper's live box state on the TestNet indexer — the chain is the source
+      of truth. Contract (hand-written TEAL template rendered by Go):
+      <a href="https://github.com/corvid-agent/waddle/blob/main/contract/approval.tmpl.teal">contract/approval.tmpl.teal</a>.
+    </p>
+
+    <footer class="foot">Arcron is unaudited. TestNet only. Read-only, no wallet.</footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
