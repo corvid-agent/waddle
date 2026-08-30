@@ -1,0 +1,4 @@
+// Waddle clear-state program. Nothing to clean up: clear always succeeds.
+#pragma version {{.TealVersion}}
+int 1
+return
