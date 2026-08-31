@@ -1,6 +1,8 @@
 {
-  "appId": 0,
+  "appId": 770742373,
   "network": "testnet",
   "keeperAppId": 769891898,
-  "notes": "not deployed"
+  "upkeepId": 111,
+  "interval": 30857,
+  "notes": "deployed — daily tick via arcron keeper, upkeep #111"
 }
