@@ -1,7 +1,7 @@
 # Waddle
 
-A Go-written Algorand **TestNet** contract experiment for Arcron keepers.
-**Unaudited. Not deployed yet — `appId = 0` everywhere in this repo.**
+A Go-written Algorand **TestNet** contract, live on the Arcron keeper network.
+**Unaudited. Live on TestNet: app `770742373`, Arcron upkeep `#111` (daily, 30,857 rounds).**
 
 Waddle is the Go-lane sibling of [corvid-agent/plod](https://github.com/corvid-agent/plod)
 (Python/AlgoKit): the same Arcron-hook contract shape, but the TEAL is
@@ -32,7 +32,7 @@ Global state schema: 3 uint64 (`calls`, `last_round`, `keeper_id`) +
 2. **Zero create args.** Create asserts `NumAppArgs == 0`. A uint64 create
    arg that gets mapped to the keeper app id freezes the cadence at ~68
    years — there is simply no create arg to mis-map.
-3. **No compiled-in cadence.** The weekly interval is an Arcron
+3. **No compiled-in cadence.** The daily interval is an Arcron
    register-time field. This program knows nothing about intervals.
 
 ## Why hand-written TEAL templates rendered by Go (not SDK assembly)
@@ -77,41 +77,40 @@ tools/tealcheck/              separate module: assembles both programs with
                               go-algorand's assembler (CGO + libsodium)
 docs/                         GitHub Pages split-flap status board (reads
                               Arcron keeper 769891898 box state on TestNet)
-docs/deploy.json              board config — appId 0 = not deployed
+docs/deploy.json              board config — live: appId 770742373, upkeepId 111
 ```
 
-## How a human deploys this later (TestNet only, never automated)
+## Deployment record (TestNet, 2026-08-31)
 
-Deploy needs an explicit human go — the deploy gate is issue #1.
+Deployed by corvid-agent under the operator's go-ahead:
 
-1. Fund a dedicated TestNet bank account (TestNet dispenser). The mnemonic
-   **never** goes into git, chat, CI logs, or this repo.
-2. Render approval + clear TEAL (`contract.ApprovalProgram()` /
-   `contract.ClearProgram()`), compile with TestNet algod (`goal clerk
-   compile` or `algod /v2/teal/compile`).
-3. Create the app with **zero app args**, global schema 3 uint / 1 bytes.
-4. From the creator account, call `set_keeper(769891898)` once.
-5. Register on the Arcron TestNet keeper app `769891898`: target = the new
-   app id, hook = `tick()` (zero args), interval = your chosen cadence in
-   rounds (weekly ≈ 224,000 rounds at ~2.8s/round — chosen at register time,
-   never compiled in), plus escrow funding per Arcron's rules.
-6. Set the real app id in `docs/deploy.json` — the Pages board lights up.
+1. Create (zero app args, global schema 3 uint / 1 bytes):
+   tx `NH3SWSL7BUFZZME24E5B3GS4BHPY7OUBGQPJUJ43CNB4VYK45IVA` (round 66835218)
+   → **app 770742373**.
+2. `set_keeper(769891898)`, one-time, creator-only:
+   tx `MAIAUPH7VBKCY6WEXJVPCUHZYT74F32BR7UYXGEYIZX2IHS56GJA` (round 66835241).
+   Note: `set_keeper` needs the keeper app in `foreign_apps`
+   (`app_params_get AppCreator` fails with "unavailable App" otherwise).
+3. Registered on keeper `769891898`: **upkeep #111**, `tick()`, interval
+   30,857 rounds (~daily), fee 4,000 µALGO, SKIP_AHEAD, 0.5 ALGO escrow:
+   group app-call `QV4O74L6VEHFDQDTZ3YYZPA77ZHL6XSID7QVA3YKAZK6TC6O3F6A`.
+4. `docs/deploy.json` flipped — the board reads it live.
 
 ## GitHub Pages board
 
 `docs/` is a split-flap/CRT status board in the same aesthetic as
 corvid-agent/plod. While `appId` is 0 it intentionally shows **NOT
-DEPLOYED**. Once `appId > 0`, it reads the upkeep box on keeper 769891898
+DEPLOYED**; with the live id set it reads the upkeep box on keeper 769891898
 whose `target_app` matches, decoding it exactly like the arrivals/plod
 boards. Read-only, no wallet, TestNet only.
 
-**Publish workflow pending:** this token lacks the `workflow` OAuth scope,
-so `.github/workflows/pages.yml` is not committed yet. Copy it verbatim from
+**Publish pending:** Pages from `docs/` needs enabling in repo settings, and
+the token that wrote this repo lacks the `workflow` OAuth scope for
+`.github/workflows/pages.yml` (copy it verbatim from
 [corvid-agent/plod](https://github.com/corvid-agent/plod/blob/main/.github/workflows/pages.yml)
-when a workflow-scoped token is available, then enable Pages with the
-GitHub Actions source.
+when a workflow-scoped token is available).
 
 ## Status
 
-TestNet only · not deployed · unaudited · no secrets in this repo.
+TestNet only · live as app 770742373 (upkeep #111) · unaudited · no secrets in this repo.
 License: MIT.
